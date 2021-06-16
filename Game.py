@@ -1,5 +1,4 @@
 import tkinter as tk
-from random import randint
 from tkinter import *
 from tkinter import ttk
 
@@ -20,6 +19,7 @@ class Game:
         self.score = 0
         self.score_text = self.canvas.create_text(100, 100, text="Score: " + str(self.score), fill="white")
         self.canvas.coords(self.score_text, self.masterX - 35, 15)
+        self.canvas.pack(fill=tk.BOTH, expand=1)
 
         self.apple = Apple(master, self.canvas)
 

@@ -20,7 +20,7 @@ class Snake:
         self.snake_head = self.canvas.create_rectangle(5, 5, 25, 25, fill="green", tags='snake')
         self.snakes.append(self.snake_head)
 
-        self.canvas.pack(fill=tk.BOTH, expand=1)
+
         self.snake_coords = []
         self.tempCords = self.canvas.coords(self.snake_head)
         self.snake_coords.append(self.tempCords)
