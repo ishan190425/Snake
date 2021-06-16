@@ -1,6 +1,3 @@
-import tkinter as tk
-
-
 class Snake:
     def __init__(self, master, canvas):
         self.master = master

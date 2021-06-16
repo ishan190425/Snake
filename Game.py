@@ -19,6 +19,7 @@ class Game:
         self.score = 0
         self.score_text = self.canvas.create_text(100, 100, text="Score: " + str(self.score), fill="white") #create score
         self.canvas.coords(self.score_text, self.masterX - 35, 15)
+
         self.canvas.pack(fill=tk.BOTH, expand=1)
 
         self.apple = Apple(master, self.canvas)
@@ -67,6 +68,7 @@ class Game:
         lose = tk.Toplevel()
         lose.wm_title("Game Over")
         lose.geometry("300x80")
+
         loss = tk.Label(lose, text="Game Over!\n" + "Score: " + str(self.score))
         loss.pack()
 
