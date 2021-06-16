@@ -20,7 +20,6 @@ class Snake:
         self.snake_head = self.canvas.create_rectangle(5, 5, 25, 25, fill="green", tags='snake')
         self.snakes.append(self.snake_head)
 
-
         self.snake_coords = []
         self.tempCords = self.canvas.coords(self.snake_head)
         self.snake_coords.append(self.tempCords)
@@ -41,12 +40,12 @@ class Snake:
         self.x = 0
         self.y = 10
 
-    def addBody(self, canvas):
+    def add_body(self, canvas):
         self.canvas = canvas
         return self.canvas.create_rectangle(1, 1, 1, 1, fill="green", tags='snakeBody')
 
-    def ateApple(self, canvas):
-        self.snakes.append(self.addBody(canvas))
+    def ate_apple(self, canvas):
+        self.snakes.append(self.add_body(canvas))
         self.tempCords = self.canvas.coords(self.snakes[-1])
         self.snake_coords.append(self.tempCords)
 

@@ -58,7 +58,7 @@ class Game:
         if self.apple.eating_apple(self.canvas):
             self.increment_score()
             self.apple.reset_apple()
-            self.snake.ateApple(canvas=self.canvas)
+            self.snake.ate_apple(canvas=self.canvas)
 
         self.snake.movement()
         self.canvas.after(100, self.movement)
