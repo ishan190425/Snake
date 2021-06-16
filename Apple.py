@@ -13,14 +13,14 @@ class Apple:
         self.masterY = self.master.winfo_screenheight()
 
         self.reset_apple()
-        self.canvas.coords(self.apple, self.apple_x - 20, self.apple_y - 20, self.apple_x, self.apple_y)
+        self.canvas.coords(self.apple, self.apple_x - 20, self.apple_y - 20, self.apple_x, self.apple_y) #random place
 
     def reset_apple(self):
         self.apple_x = randint(20, self.masterX - 20)
-        self.apple_y = randint(20, self.masterY - 20)
+        self.apple_y = randint(20, self.masterY - 20) #max dimensions, place in window
         self.canvas.coords(self.apple, self.apple_x - 20, self.apple_y - 20, self.apple_x, self.apple_y)
 
-    def eating_apple(self, canvas):
+    def ate_apple(self, canvas):
         self.canvas = canvas
         for item in self.canvas.find_all():
             tags = self.canvas.gettags(item)
