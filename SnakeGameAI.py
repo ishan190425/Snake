@@ -5,7 +5,7 @@ import numpy as np
 
 
 class GameAI:
-    def __init__(self, width=400, height=300) -> None:
+    def __init__(self, width=400, height=300, speed=1) -> None:
         pygame.init()
         self.clock = pygame.time.Clock()
         self.dis = pygame.display.set_mode((width, height))
@@ -14,8 +14,8 @@ class GameAI:
         self.game_over = False
         self.masterX, self.masterY = pygame.display.get_surface().get_size()
 
-        self.SPEED_COSTENT = 1
-        self.x_speed = self.SPEED_COSTENT
+        self.SPEED_CONSTENT = speed
+        self.x_speed = self.SPEED_CONSTENT
         self.y_speed = 0
 
         self.white = (255, 255, 255)
@@ -27,13 +27,16 @@ class GameAI:
 
         self.score = 0
         self.last_score = 0
+        self.record = 0
+        self.gen = 0
         self.snakes = []
         self.snake_coords = []
         self.snake_head = pygame.draw.rect(
-            self.dis, self.white, (0, 0, 20, 20))
+            self.dis, self.white, (5, 5, 20, 20))
         self.snakes.append(self.snake_head)
         self.snake_coords.append(self.snake_head)
-
+        self.add_body()
+        self.add_body()
         self.font_style = pygame.font.SysFont(None, 25)
 
         self.apple = None
@@ -49,33 +52,56 @@ class GameAI:
             return True
         if self.snake_head.bottom > screen.bottom:
             return True
+        return False or self.self_colision()
+
+    def self_colision(self):
+        for i in range(1, len(self.snakes)):
+            if self.snake_head == self.snakes[i]:
+                return True
         return False
 
-    def reset(self):
+    def near_collison(self):
+        for i in range(1, len(self.snakes)):
+            if self.snake_head.right + 1 == self.snakes[i].left:
+                return True
+            elif self.snake_head.left - 1 == self.snakes[i].right:
+                return True
+            elif self.snake_head.top - 1 == self.snakes[i].bottom:
+                return True
+            elif self.snake_head.bottom + 1 == self.snakes[i].top:
+                return True
+        return False
+
+    def reset(self, gen, record):
         self.dis.fill(self.black)
         self.game_over = False
         self.score = 0
+        self.last_score = 0
         self.clock = pygame.time.Clock()
         pygame.display.update()
+        self.x_speed = 0
+        self.y_speed = 0
         self.reset_snake()
         self.reset_apple()
+        self.gen = gen
+        self.record = record
         self.run()
 
     def left(self):
-        self.x_speed = -self.SPEED_COSTENT
+        self.x_speed = -self.SPEED_CONSTENT
         self.y_speed = 0
 
     def right(self):
-        self.x_speed = self.SPEED_COSTENT
+        self.x_speed = self.SPEED_CONSTENT
         self.y_speed = 0
 
     def up(self):
         self.x_speed = 0
-        self.y_speed = -self.SPEED_COSTENT
+        self.y_speed = -self.SPEED_CONSTENT
 
     def down(self):
         self.x_speed = 0
-        self.y_speed = self.SPEED_COSTENT
+        self.y_speed = self.SPEED_CONSTENT
 
     def increment_score(self):
         self.score += 1
@@ -86,21 +112,22 @@ class GameAI:
         state = [x for x in range(13)]
         screen = self.dis.get_rect()
 
-        state[0] = 1 if self.snake_head.top == screen.top else 0  # colsion up
-        state[1] = 1 if self.snake_head.bottom == screen.bottom else 0  # down
-        state[2] = 1 if self.snake_head.left == screen.left else 0  # left
-        state[3] = 1 if self.snake_head.right == screen.right else 0  # right
+        state[0] = 1 if self.snake_head.top +1  <= screen.top else 0  # colsion up
+        state[1] = 1 if self.snake_head.bottom -1 >= screen.bottom else 0  # down
+        state[2] = 1 if self.snake_head.left -1  <= screen.left else 0  # left
+        state[3] = 1 if self.snake_head.right +1  >= screen.right else 0  # right
 
         state[4] = 1 if self.x_speed < 0 else 0  # going left
         state[5] = 1 if self.x_speed > 0 else 0  # right
         state[6] = 1 if self.y_speed < 0 else 0  # up
         state[7] = 1 if self.y_speed > 0 else 0  # down
 
-        state[8] = 1 if self.snake_head.left < self.apple.left else 0  # food left
-        state[9] = 1 if self.snake_head.right < self.apple.right else 0  # right
+        state[8] = 1 if self.snake_head.left > self.apple.right else 0  # food left
+        state[9] = 1 if self.snake_head.right < self.apple.left else 0  # right
         state[10] = 1 if self.snake_head.top > self.apple.bottom else 0  # up
         state[11] = 1 if self.snake_head.bottom < self.apple.top else 0  # down
 
+        state[12] = self.score
         return np.array(state, dtype=int)
 
     def play_move(self, move):
@@ -114,36 +141,34 @@ class GameAI:
         elif move[2] == 1:
             self.up()
 
-        else:
+        elif move[3] == 1:
             self.down()
 
-        if self.game_over == True:
+        else:
+            self.x_speed = 0
+            self.y_speed = 0
+
+        self.run()
+        if self.game_over:
             reward = -10
 
         elif self.last_score is not self.score:
             reward = 10
             self.last_score = self.score
-        self.run()
         return reward, self.game_over, self.score
 
     def movement(self):
-        self.dis.fill(self.black)
+        if self.game_over:
+            return
         if self.lost():
             self.game_over = True
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    self.left()
-                elif event.key == pygame.K_RIGHT:
-                    self.right()
-                elif event.key == pygame.K_UP:
-                    self.up()
-                elif event.key == pygame.K_DOWN:
-                    self.down()
+            return 
+        self.dis.fill(self.black)
+        
 
     def update_score(self):
         value = self.font_style.render(
-            "Score: " + str(self.score), True, self.blue)
+            "Gen: " + str(self.gen) + " Score: " + str(self.score) + " Record: " + str(self.record), True, self.blue)
         self.dis.blit(value, [0, 0])
 
     def update(self):
@@ -173,7 +198,7 @@ class GameAI:
         self.snakes = []
         self.snake_coords = []
         self.snake_head = pygame.draw.rect(
-            self.dis, self.white, (0, 0, 20, 20))
+            self.dis, self.white, (5, 5, 20, 20))
         self.snakes.append(self.snake_head)
         self.snake_coords.append(self.snake_head)
 
@@ -181,6 +206,7 @@ class GameAI:
         snake_body = self.snakes[-1]
         self.snakes.append(snake_body)
         self.snake_coords.append(snake_body)
+        self.draw_snake()
 
     def draw_snake(self):
         self.snake_head = self.snake_head.move(self.x_speed, self.y_speed)
@@ -197,4 +223,5 @@ class GameAI:
 
 if __name__ == '__main__':
     g = GameAI()
-    g.run()
+    while True:
+        g.run()
