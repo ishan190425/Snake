@@ -1,7 +1,5 @@
 from collections import deque
-import enum
 import random
-from tkinter.constants import UNITS
 from keras import callbacks
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -12,12 +10,10 @@ import numpy as np
 import time
 import os
 
-from tensorflow.python.keras.backend import shape
-
 REPLAY_MEMORY_SIZE = 100_000
 MODEL_NAME = "12X4"
 MIN_REPLAY_MEMORY_SIZE = 1_000
-MINIBATCH_SIZE = 64
+MINIBATCH_SIZE = 1000
 DISCOUNT = 0.99
 UPDATE_TARGET_EVERY = 5
 
@@ -53,9 +49,8 @@ class ModifiedTensorBoard(TensorBoard):
     def update_stats(self, **stats):
         with self.writer.as_default():
             for key, value in stats.items():
-                tf.summary.scalar(key, value, step = self.step)
+                tf.summary.scalar(key, value, step=self.step)
                 self.writer.flush()
-
 
 
 class Model:
@@ -76,9 +71,9 @@ class Model:
 
     def create_model(self, input_size, hidden_size, output_size):
         model = Sequential()
-        model.add(Dense(units=input_size, activation='relu', input_dim=13))
+        model.add(Dense(units=input_size, activation='relu', input_dim=input_size))
         model.add(Dense(units=hidden_size, activation='relu'))
-        model.add(Dense(units=output_size, activation='sigmoid'))
+        model.add(Dense(units=output_size, activation='linear'))
         model.compile(loss="mse", optimizer='adam', metrics=['accuracy'])
         return model
 
@@ -107,7 +102,7 @@ class Model:
         for index, (current_state, action, reward, new_current_state, done) in enumerate(minibatch):
             if not done:
                 max_future_q = np.max(future_qs_list[index])
-                new_q = reward + DISCOUNT * max_future_q
+                new_q = reward + (DISCOUNT * max_future_q)
             else:
                 new_q = reward
 
@@ -116,8 +111,6 @@ class Model:
 
             X.append(current_state)
             y.append(current_qs)
-        
-        
 
         self.model.fit(np.array(X), np.array(y), batch_size=MINIBATCH_SIZE, verbose=0,
                        shuffle=False, callbacks=[self.tensorboard] if terminal_state else None)

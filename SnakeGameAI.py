@@ -1,4 +1,4 @@
-from tkinter.constants import TRUE
+
 import pygame
 from random import randint
 import numpy as np
@@ -29,18 +29,21 @@ class GameAI:
         self.last_score = 0
         self.record = 0
         self.gen = 0
+
+        self.prev = 0
+        
         self.snakes = []
         self.snake_coords = []
         self.snake_head = pygame.draw.rect(
-            self.dis, self.white, (5, 5, 20, 20))
+            self.dis, self.white, (self.masterX/2, self.masterY/2, 20, 20))
         self.snakes.append(self.snake_head)
         self.snake_coords.append(self.snake_head)
-        self.add_body()
-        self.add_body()
+        
         self.font_style = pygame.font.SysFont(None, 25)
 
         self.apple = None
         self.reset_apple()
+
 
     def lost(self):
         screen = self.dis.get_rect()
@@ -52,13 +55,15 @@ class GameAI:
             return True
         if self.snake_head.bottom > screen.bottom:
             return True
-        return False or self.self_colision()
+        return False 
+
 
     def self_colision(self):
         for i in range(1, len(self.snakes)):
             if self.snake_head == self.snakes[i]:
                 return True
         return False
+
 
     def near_collison(self):
         for i in range(1, len(self.snakes)):
@@ -71,6 +76,7 @@ class GameAI:
             elif self.snake_head.bottom + 1 == self.snakes[i].top:
                 return True
         return False
+
 
     def reset(self, gen, record):
         self.dis.fill(self.black)
@@ -87,21 +93,54 @@ class GameAI:
         self.record = record
         self.run()
 
+
     def left(self):
+        if self.going_right():
+            return self.right()
         self.x_speed = -self.SPEED_CONSTENT
+        self.y_speed = 0
+        self.prev = 1
+    
+
+    def going_left(self):
+        return self.prev == 1
+
+    def stop(self):
+        self.x_speed = 0
         self.y_speed = 0
 
     def right(self):
+        if self.going_left():
+            return self.left()
         self.x_speed = self.SPEED_CONSTENT
         self.y_speed = 0
+        self.prev = 2
+    
+
+    def going_right(self):
+        return self.prev == 2
+
 
     def up(self):
+        if self.going_down():
+            return self.down()
         self.x_speed = 0
         self.y_speed = -self.SPEED_CONSTENT
+        self.prev = 3
+    
+
+    def going_up(self):
+        return self.prev == 3
 
     def down(self):
+        if self.going_up():
+            return self.up()
         self.x_speed = 0
         self.y_speed = self.SPEED_CONSTENT
+        self.prev = 4
+    
+    def going_down(self):
+        return self.prev == 4
 
     def increment_score(self):
         self.score += 1
@@ -109,29 +148,46 @@ class GameAI:
         self.reset_apple()
 
     def get_state(self):
-        state = [x for x in range(13)]
+        state = [x for x in range(12)]
+        
         screen = self.dis.get_rect()
+        temp = self.snake_head
 
-        state[0] = 1 if self.snake_head.top +1  <= screen.top else 0  # colsion up
-        state[1] = 1 if self.snake_head.bottom -1 >= screen.bottom else 0  # down
-        state[2] = 1 if self.snake_head.left -1  <= screen.left else 0  # left
-        state[3] = 1 if self.snake_head.right +1  >= screen.right else 0  # right
+        state[0] = abs(temp.left - screen.left)
 
-        state[4] = 1 if self.x_speed < 0 else 0  # going left
-        state[5] = 1 if self.x_speed > 0 else 0  # right
-        state[6] = 1 if self.y_speed < 0 else 0  # up
-        state[7] = 1 if self.y_speed > 0 else 0  # down
+        state[1] = abs(temp.right - screen.left)
 
-        state[8] = 1 if self.snake_head.left > self.apple.right else 0  # food left
-        state[9] = 1 if self.snake_head.right < self.apple.left else 0  # right
-        state[10] = 1 if self.snake_head.top > self.apple.bottom else 0  # up
-        state[11] = 1 if self.snake_head.bottom < self.apple.top else 0  # down
+        state[2] = abs(temp.top - screen.top)
 
-        state[12] = self.score
+        state[3] = abs(temp.bottom - screen.bottom)
+
+        state[4] = self.going_left() and not self.game_over  # going left
+        state[5] = self.going_right() and not self.game_over  # right
+        state[6] = self.going_up() and not self.game_over  # up
+        state[7] = self.going_down() and not self.game_over  # down
+
+        snakex = self.snake_head.centerx
+        snakey = self.snake_head.centery
+        applex = self.apple.centerx
+        appley = self.apple.centery
+
+        temp = self.snake_head
+
+        t = temp.move(-self.SPEED_CONSTENT,0)
+        state[8] = (snakex > applex or t.colliderect(self.apple)) and not self.game_over # food left
+        
+        t = temp.move(self.SPEED_CONSTENT,0)
+        state[9] = (snakex < applex or t.colliderect(self.apple)) and not self.game_over  # right
+        
+        t = temp.move(0,-self.SPEED_CONSTENT)
+        state[10] = (snakey > appley or t.colliderect(self.apple)) and not self.game_over  # up
+        
+        t = temp.move(0,self.SPEED_CONSTENT)
+        state[11] = (snakey < appley or t.colliderect(self.apple)) and not self.game_over  # down
+        
         return np.array(state, dtype=int)
 
     def play_move(self, move):
-        reward = 0
         if move[0] == 1:
             self.left()
 
@@ -144,18 +200,21 @@ class GameAI:
         elif move[3] == 1:
             self.down()
 
-        else:
-            self.x_speed = 0
-            self.y_speed = 0
-
         self.run()
+
+        reward = -1
+
         if self.game_over:
-            reward = -10
+            reward = -1000
 
         elif self.last_score is not self.score:
-            reward = 10
+            reward = 1000
             self.last_score = self.score
+        
+        self.stop()
+
         return reward, self.game_over, self.score
+
 
     def movement(self):
         if self.game_over:
@@ -171,6 +230,7 @@ class GameAI:
             "Gen: " + str(self.gen) + " Score: " + str(self.score) + " Record: " + str(self.record), True, self.blue)
         self.dis.blit(value, [0, 0])
 
+
     def update(self):
         pygame.draw.rect(self.dis, self.red, self.apple)
         self.draw_snake()
@@ -178,11 +238,13 @@ class GameAI:
         pygame.display.update()
         self.clock.tick(40)
 
+
     def run(self):
         self.movement()
         if self.ate_apple():
             self.increment_score()
         self.update()
+
 
     def reset_apple(self):
         apple_x = randint(0, self.masterX - 20)
@@ -191,22 +253,26 @@ class GameAI:
         self.apple = pygame.draw.rect(
             self.dis, self.red, (apple_x, apple_y, 20, 20))
 
+
     def ate_apple(self):
         return self.apple.colliderect(self.snake_head)
+
 
     def reset_snake(self):
         self.snakes = []
         self.snake_coords = []
         self.snake_head = pygame.draw.rect(
-            self.dis, self.white, (5, 5, 20, 20))
+            self.dis, self.white, (self.masterX/2, self.masterY/2, 20, 20))
         self.snakes.append(self.snake_head)
         self.snake_coords.append(self.snake_head)
+
 
     def add_body(self):
         snake_body = self.snakes[-1]
         self.snakes.append(snake_body)
         self.snake_coords.append(snake_body)
         self.draw_snake()
+
 
     def draw_snake(self):
         self.snake_head = self.snake_head.move(self.x_speed, self.y_speed)

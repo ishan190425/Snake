@@ -1,14 +1,9 @@
-from model import Model
+from Model import Model
 import tensorflow as tf
 from collections import deque
-
 import random
 from SnakeGameAI import GameAI
-
-max_memory = 100000
-batch_size = 1000
-learning_rate = 0.001
-
+import time
 
 class Train:
     def __init__(self) -> None:
@@ -16,8 +11,7 @@ class Train:
         self.epsilon = 0
         self.gamma = 0.9  # discount rate
         # max memory (remove the orignal if over bounds)
-        self.memory = deque(maxlen=max_memory)
-        self.model = Model(12, 64, 4)
+        self.model = Model(12, 16, 4)
 
     def get_state(self, game: GameAI):
         return game.get_state()
@@ -27,7 +21,7 @@ class Train:
         self.epsilon = 80 - self.num_games
         final_move = [0, 0, 0, 0]
 
-        if random.randint(0, 200) > self.epsilon:  # random chance at random move
+        if self.epsilon > random.randint(0,200):  # random chance at random move
             move = random.randint(0, 3)
             final_move[move] = 1
 
@@ -35,6 +29,7 @@ class Train:
             prediction = self.model.get_qs(state)
             move = tf.argmax(prediction)
             final_move[move] = 1
+            
         return final_move
 
     def train_step(self, transition):
@@ -47,26 +42,34 @@ class Train:
 def train():
     record = 0
     trainer = Train()
-    game = GameAI(speed=3)
+    games = [GameAI(speed=10) for x in range(1)]
     while True:
         # get old state
+        for game in games:
 
-        state_old = trainer.get_state(game)
+            state_old = trainer.get_state(game)
 
-        move = trainer.get_move(state_old)
+            move = trainer.get_move(state_old)
 
-        reward, done, score = game.play_move(move)
-        state_new = trainer.get_state(game)
+            reward, done, score = game.play_move(move)
+            
+            state_new = trainer.get_state(game)
 
-        if done:
-            game.reset(trainer.num_games, record)
-            trainer.num_games += 1
-            trainer.train_step((state_old, move, reward, state_new, done))
+            trainer.model.tensorboard.step = score
+            trainer.model.tensorboard.update_stats()
 
-            if score > record:
-                record = score
+            if done:
+                
+                trainer.num_games += 1
+                trainer.train_step((state_old, move, reward, state_new, done))
 
-        trainer.update_replay((state_old, move, reward, state_new, done))
+                if score > record:
+                    record = score
+
+                game.reset(trainer.num_games, record)
+
+            trainer.update_replay((state_old, move, reward, state_new, done))
+        
 
 
 if __name__ == '__main__':
