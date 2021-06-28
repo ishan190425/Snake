@@ -13,7 +13,7 @@ import os
 REPLAY_MEMORY_SIZE = 100_000
 MODEL_NAME = "12X4"
 MIN_REPLAY_MEMORY_SIZE = 1_000
-MINIBATCH_SIZE = 1000
+MINIBATCH_SIZE = 64
 DISCOUNT = 0.99
 UPDATE_TARGET_EVERY = 5
 
@@ -87,11 +87,14 @@ class Model:
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
             return
 
-        minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
+        minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE) #random sample
 
+
+        #get current actions and current states
         current_states = np.array([transition[0] for transition in minibatch])
         current_qs_list = self.model.predict(current_states)
 
+        #get new current states
         new_current_states = np.array(
             [transition[3] for transition in minibatch])
         future_qs_list = self.target.predict(new_current_states)
@@ -109,9 +112,11 @@ class Model:
             current_qs = current_qs_list[index]
             current_qs[action] = new_q
 
+            #append all current state and current qs
             X.append(current_state)
             y.append(current_qs)
 
+        #fit if a terminal state
         self.model.fit(np.array(X), np.array(y), batch_size=MINIBATCH_SIZE, verbose=0,
                        shuffle=False, callbacks=[self.tensorboard] if terminal_state else None)
 

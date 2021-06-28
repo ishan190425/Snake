@@ -5,6 +5,7 @@ import random
 from SnakeGameAI import GameAI
 import time
 
+
 class Train:
     def __init__(self) -> None:
         self.num_games = 0
@@ -21,7 +22,8 @@ class Train:
         self.epsilon = 80 - self.num_games
         final_move = [0, 0, 0, 0]
 
-        if self.epsilon > random.randint(0,200):  # random chance at random move
+        # random chance at random move
+        if self.epsilon > random.randint(0, 200):
             move = random.randint(0, 3)
             final_move[move] = 1
 
@@ -29,11 +31,11 @@ class Train:
             prediction = self.model.get_qs(state)
             move = tf.argmax(prediction)
             final_move[move] = 1
-            
+
         return final_move
 
-    def train_step(self, transition):
-        self.model.train_model(transition)
+    def train_step(self, state):
+        self.model.train_model(state)
 
     def update_replay(self, state):
         self.model.update_replay_memory(state)
@@ -52,24 +54,22 @@ def train():
             move = trainer.get_move(state_old)
 
             reward, done, score = game.play_move(move)
-            
+
             state_new = trainer.get_state(game)
 
-            trainer.model.tensorboard.step = score
-            trainer.model.tensorboard.update_stats()
-
+    
             if done:
-                
-                trainer.num_games += 1
-                trainer.train_step((state_old, move, reward, state_new, done))
 
+                trainer.num_games += 1
+                
                 if score > record:
                     record = score
 
                 game.reset(trainer.num_games, record)
-
+            
             trainer.update_replay((state_old, move, reward, state_new, done))
-        
+            trainer.train_step(done)
+
 
 
 if __name__ == '__main__':
