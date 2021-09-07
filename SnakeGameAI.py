@@ -18,7 +18,7 @@ class GameAI:
         self.x_speed = self.SPEED_CONSTENT
         self.y_speed = 0
 
-        #currents
+        # currents
         self.white = (255, 255, 255)
         self.yellow = (255, 255, 102)
         self.black = (0, 0, 0)
@@ -26,7 +26,7 @@ class GameAI:
         self.green = (0, 255, 0)
         self.blue = (50, 153, 213)
 
-        #game variables
+        # game variables
         self.score = 0
         self.last_score = 0
         self.record = 0
@@ -34,20 +34,20 @@ class GameAI:
 
         self.prev = 0
 
-        #list of snakses
+        # list of snakses
         self.snakes = []
         self.snake_coords = []
         self.snake_head = pygame.draw.rect(
             self.dis, self.white, (self.masterX/2, self.masterY/2, 20, 20))
         self.snakes.append(self.snake_head)
         self.snake_coords.append(self.snake_head)
-        
+
         self.font_style = pygame.font.SysFont(None, 25)
 
         self.apple = None
         self.reset_apple()
 
-    #lose coditons if they cross the screen
+    # lose coditons if they cross the screen
     def lost(self):
         screen = self.dis.get_rect()
         if self.snake_head.right > screen.right:
@@ -58,15 +58,13 @@ class GameAI:
             return True
         if self.snake_head.bottom > screen.bottom:
             return True
-        return False 
-
+        return False
 
     def self_colision(self):
         for i in range(1, len(self.snakes)):
             if self.snake_head == self.snakes[i]:
                 return True
         return False
-
 
     def near_collison(self):
         for i in range(1, len(self.snakes)):
@@ -80,7 +78,7 @@ class GameAI:
                 return True
         return False
 
-    #reset the game
+    # reset the game
     def reset(self, gen, record):
         self.dis.fill(self.black)
         self.game_over = False
@@ -96,14 +94,12 @@ class GameAI:
         self.record = record
         self.run()
 
-
     def left(self):
         if self.going_right():
             return self.right()
         self.x_speed = -self.SPEED_CONSTENT
         self.y_speed = 0
         self.prev = 1
-    
 
     def going_left(self):
         return self.prev == 1
@@ -118,11 +114,9 @@ class GameAI:
         self.x_speed = self.SPEED_CONSTENT
         self.y_speed = 0
         self.prev = 2
-    
 
     def going_right(self):
         return self.prev == 2
-
 
     def up(self):
         if self.going_down():
@@ -130,7 +124,6 @@ class GameAI:
         self.x_speed = 0
         self.y_speed = -self.SPEED_CONSTENT
         self.prev = 3
-    
 
     def going_up(self):
         return self.prev == 3
@@ -141,7 +134,7 @@ class GameAI:
         self.x_speed = 0
         self.y_speed = self.SPEED_CONSTENT
         self.prev = 4
-    
+
     def going_down(self):
         return self.prev == 4
 
@@ -150,14 +143,14 @@ class GameAI:
         self.add_body()
         self.reset_apple()
 
-    #return the current state
+    # return the current state
     def get_state(self):
         state = [x for x in range(12)]
-        
+
         screen = self.dis.get_rect()
         temp = self.snake_head
 
-        #if almost collision
+        # if almost collision
         state[0] = temp.left - self.SPEED_CONSTENT < screen.left
 
         state[1] = temp.right + self.SPEED_CONSTENT > screen.right
@@ -178,19 +171,23 @@ class GameAI:
 
         temp = self.snake_head
 
-        #if almost apple
-        t = temp.move(-1 * self.SPEED_CONSTENT,0)
-        state[8] = (snakex > applex or t.colliderect(self.apple)) and not self.game_over # food left
-        
-        t = temp.move(self.SPEED_CONSTENT,0)
-        state[9] = (snakex < applex or t.colliderect(self.apple)) and not self.game_over  # right
-        
-        t = temp.move(0,-1 * self.SPEED_CONSTENT)
-        state[10] = (snakey > appley or t.colliderect(self.apple)) and not self.game_over  # up
-        
-        t = temp.move(0,self.SPEED_CONSTENT)
-        state[11] = (snakey < appley or t.colliderect(self.apple)) and not self.game_over  # down
-        
+        # if almost apple
+        t = temp.move(-1 * self.SPEED_CONSTENT, 0)
+        state[8] = (snakex > applex or t.colliderect(
+            self.apple)) and not self.game_over  # food left
+
+        t = temp.move(self.SPEED_CONSTENT, 0)
+        state[9] = (snakex < applex or t.colliderect(
+            self.apple)) and not self.game_over  # right
+
+        t = temp.move(0, -1 * self.SPEED_CONSTENT)
+        state[10] = (snakey > appley or t.colliderect(
+            self.apple)) and not self.game_over  # up
+
+        t = temp.move(0, self.SPEED_CONSTENT)
+        state[11] = (snakey < appley or t.colliderect(
+            self.apple)) and not self.game_over  # down
+
         return np.array(state, dtype=int)
 
     def play_move(self, move):
@@ -208,7 +205,7 @@ class GameAI:
 
         self.run()
 
-        reward = -1
+        reward = self.score
 
         if self.game_over:
             reward = -1000
@@ -216,27 +213,24 @@ class GameAI:
         elif self.last_score is not self.score:
             reward = 1000
             self.last_score = self.score
-        
+
         self.stop()
 
         return reward, self.game_over, self.score
-
 
     def movement(self):
         if self.game_over:
             return
         if self.lost():
             self.game_over = True
-            return 
+            return
         self.dis.fill(self.black)
-        
 
     def update_score(self):
         value = self.font_style.render(
-            "Gen: " + str(self.gen) + " Score: " + str(self.score) 
+            "Gen: " + str(self.gen) + " Score: " + str(self.score)
             + " Record: " + str(self.record), True, self.blue)
         self.dis.blit(value, [0, 0])
-
 
     def update(self):
         pygame.draw.rect(self.dis, self.red, self.apple)
@@ -245,13 +239,11 @@ class GameAI:
         pygame.display.update()
         self.clock.tick(40)
 
-
     def run(self):
         self.movement()
         if self.ate_apple():
             self.increment_score()
         self.update()
-
 
     def reset_apple(self):
         apple_x = randint(0, self.masterX - 20)
@@ -260,11 +252,10 @@ class GameAI:
         self.apple = pygame.draw.rect(
             self.dis, self.red, (apple_x, apple_y, 20, 20))
 
-
     def ate_apple(self):
         return self.apple.colliderect(self.snake_head)
 
-    #reset the snake
+    # reset the snake
     def reset_snake(self):
         self.snakes = []
         self.snake_coords = []
@@ -273,14 +264,13 @@ class GameAI:
         self.snakes.append(self.snake_head)
         self.snake_coords.append(self.snake_head)
 
-
     def add_body(self):
         snake_body = self.snakes[-1]
         self.snakes.append(snake_body)
         self.snake_coords.append(snake_body)
         self.draw_snake()
 
-    #draw the snake
+    # draw the snake
     def draw_snake(self):
         self.snake_head = self.snake_head.move(self.x_speed, self.y_speed)
         pygame.draw.rect(self.dis, self.white, self.snake_head)
